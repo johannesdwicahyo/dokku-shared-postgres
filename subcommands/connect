@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+name="${1:-}"
+flag="${2:-}"
+if [[ -z "$name" ]]; then
+  echo "usage: dokku $PLUGIN_COMMAND_PREFIX:connect <name> [--print-only]" >&2
+  exit 2
+fi
+if ! service_exists "$name"; then
+  echo "service does not exist: $name" >&2
+  exit 3
+fi
+
+role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+pw="$(<"$PLUGIN_DATA_ROOT/$name/PASSWORD")"
+
+if [[ "$flag" == "--print-only" ]]; then
+  printf 'PGPASSWORD=<redacted> docker exec -it -e PGPASSWORD %s psql -U %s -d %s\n' \
+    "$PLUGIN_CONTAINER_NAME" "$role" "$db"
+  exit 0
+fi
+
+PGPASSWORD="$pw" exec docker exec -it \
+  -e PGPASSWORD \
+  "$PLUGIN_CONTAINER_NAME" \
+  psql -U "$role" -d "$db"

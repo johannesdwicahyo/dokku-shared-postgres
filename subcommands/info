@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+name="${1:-}"
+if [[ -z "$name" ]]; then
+  echo "usage: dokku $PLUGIN_COMMAND_PREFIX:info <name>" >&2
+  exit 2
+fi
+if ! service_exists "$name"; then
+  echo "service does not exist: $name" >&2
+  exit 3
+fi
+
+i_name="" i_role="" i_database="" i_host="" i_port=""
+i_size_bytes="" i_connection_limit="" i_active_connections="" i_linked_apps=""
+
+while IFS='=' read -r key value; do
+  [[ -z "$key" ]] && continue
+  case "$key" in
+    name)               i_name="$value" ;;
+    role)               i_role="$value" ;;
+    database)           i_database="$value" ;;
+    host)               i_host="$value" ;;
+    port)               i_port="$value" ;;
+    size_bytes)         i_size_bytes="$value" ;;
+    connection_limit)   i_connection_limit="$value" ;;
+    active_connections) i_active_connections="$value" ;;
+    linked_apps)        i_linked_apps="$value" ;;
+  esac
+done < <(service_info "$name")
+
+printf '%-22s %s\n'        "Name:"        "$i_name"
+printf '%-22s %s\n'        "Role:"        "$i_role"
+printf '%-22s %s\n'        "Database:"    "$i_database"
+printf '%-22s %s:%s\n'     "Host:"        "$i_host" "$i_port"
+printf '%-22s %s bytes\n'  "Size:"        "$i_size_bytes"
+printf '%-22s %s / %s\n'   "Connections:" "$i_active_connections" "$i_connection_limit"
+printf '%-22s %s\n'        "Linked apps:" "${i_linked_apps:-(none)}"
