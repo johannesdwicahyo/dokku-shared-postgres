@@ -1,5 +1,7 @@
 [plugin]
-description = "Shared multi-tenant Postgres plugin for Dokku"
-version = "0.0.1"
+name = "shared-postgres"
+description = "Dokku plugin: shared multi-tenant Postgres on a single host"
+version = "0.1.0-dev"
+license = "MIT"
+
 [plugin.config]
-core = "false"
