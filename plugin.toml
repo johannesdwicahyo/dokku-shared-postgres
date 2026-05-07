@@ -1,0 +1,5 @@
+[plugin]
+description = "Shared multi-tenant Postgres plugin for Dokku"
+version = "0.0.1"
+[plugin.config]
+core = "false"
