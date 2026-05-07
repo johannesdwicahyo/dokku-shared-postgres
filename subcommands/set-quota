@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+name="${1:-}"
+mb="${2:-}"
+if [[ -z "$name" || -z "$mb" ]]; then
+  echo "usage: dokku $PLUGIN_COMMAND_PREFIX:set-quota <name> <mb>" >&2
+  exit 2
+fi
+
+service_set_quota_mb "$name" "$mb"
+echo "quota set: $name = ${mb} MB"

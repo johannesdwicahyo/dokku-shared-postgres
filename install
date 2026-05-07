@@ -15,4 +15,19 @@ docker image pull "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}"
 
 ensure_shared_container
 
+# Install the periodic quota check. Operators can disable by removing this file.
+CRON_FILE="/etc/cron.d/dokku-shared-postgres"
+if [[ -w "$(dirname "$CRON_FILE")" || "$(id -u)" -eq 0 ]]; then
+  cat >"$CRON_FILE" <<'CRON_EOF'
+# Periodic quota enforcement for dokku-shared-postgres tenants.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/5 * * * * dokku dokku shared-postgres:check-quotas >/dev/null 2>&1
+CRON_EOF
+  chmod 0644 "$CRON_FILE" || true
+  echo "shared-postgres: installed cron at $CRON_FILE"
+else
+  echo "shared-postgres: skipped cron install (no write permission to /etc/cron.d)" >&2
+fi
+
 echo "shared-postgres: install complete"
