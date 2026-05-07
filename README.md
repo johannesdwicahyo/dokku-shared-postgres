@@ -2,31 +2,40 @@
 
 [![CI](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml)
 
-> **Status: scaffolding.** Project just kicked off. APIs and commands documented below are the **plan**, not the current state.
+> **Status: v0.1.0-dev.** Shipping CLI surface: `create`, `destroy`, `link`, `list`. `info`, `connect`, `export`, `import`, `set-quota`, and the periodic quota-enforcement trigger are landing in v0.1.
 
 A [Dokku](https://dokku.com) plugin that provides **shared, multi-tenant Postgres** on a single host. One Postgres container per host; each tenant gets a Postgres role + database with limited privileges, plus quota enforcement.
 
 Designed for hosts running many small apps that don't each need their own Postgres container — saves memory, easier to manage, easier to back up. Powers [wokku.cloud](https://wokku.cloud)'s free Postgres tier.
 
-## Install (planned)
+## Install
 
 ```bash
-dokku plugin:install https://github.com/johannesdwicahyo/dokku-shared-postgres.git
+dokku plugin:install https://github.com/johannesdwicahyo/dokku-shared-postgres.git shared-postgres
 ```
 
-## Commands (planned)
+## Usage
 
 ```bash
-dokku shared-postgres:create my-db
-dokku shared-postgres:link my-db my-app          # sets DATABASE_URL
-dokku shared-postgres:connect my-db              # interactive psql
-dokku shared-postgres:info my-db                 # name, owner, size, conns
-dokku shared-postgres:list                       # all tenants on host
-dokku shared-postgres:set-quota my-db 250        # MB
-dokku shared-postgres:export my-db > dump.sql
-dokku shared-postgres:import my-db < dump.sql
-dokku shared-postgres:destroy my-db
+# Provision a tenant database:
+dokku shared-postgres:create myapp_db
+# -> postgres://myapp_db_role:<random>@dokku-shared-postgres:5432/myapp_db
+
+# Link it to a Dokku app (sets DATABASE_URL on the app):
+dokku shared-postgres:link myapp_db myapp
+
+# List all tenants on this host:
+dokku shared-postgres:list
+
+# Drop a tenant (use -f because there is no recovery):
+dokku shared-postgres:destroy myapp_db -f
 ```
+
+## Architecture
+
+- One shared `postgres:16-alpine` container per host, on the `dokku-shared-postgres` Docker network.
+- Each tenant gets a Postgres ROLE (`<name>_role`) and a DATABASE (`<name>`). `CONNECT` on the database is revoked from `PUBLIC` and granted only to the role. Default per-role connection limit: 20.
+- Per-tenant metadata (password, role, database, linked apps) lives in `/var/lib/dokku/services/shared-postgres/<name>/`.
 
 ## Why "shared"?
 

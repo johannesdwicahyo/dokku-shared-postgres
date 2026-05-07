@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+
+cmd="${1:-}"
+
+case "$cmd" in
+  "$PLUGIN_COMMAND_PREFIX"|"$PLUGIN_COMMAND_PREFIX":*) : ;;
+  help|"$PLUGIN_COMMAND_PREFIX":help)
+    cat <<EOF
+Usage: dokku $PLUGIN_COMMAND_PREFIX:<command> [args]
+
+Commands:
+  $PLUGIN_COMMAND_PREFIX:create <name>           Create a new tenant database.
+  $PLUGIN_COMMAND_PREFIX:destroy <name> -f       Drop a tenant database and role.
+  $PLUGIN_COMMAND_PREFIX:link <name> <app>       Set DATABASE_URL on <app>.
+  $PLUGIN_COMMAND_PREFIX:list                    List all tenants on this host.
+EOF
+    exit 0
+    ;;
+  *) exit "${DOKKU_NOT_IMPLEMENTED_EXIT:-10}" ;;
+esac
+
+sub="${cmd#"$PLUGIN_COMMAND_PREFIX":}"
+[[ "$sub" == "$PLUGIN_COMMAND_PREFIX" ]] && sub="default"
+
+sub_script="$PLUGIN_ROOT/subcommands/$sub"
+if [[ ! -x "$sub_script" ]]; then
+  echo "shared-postgres: unknown subcommand: $sub" >&2
+  exit "${DOKKU_NOT_IMPLEMENTED_EXIT:-10}"
+fi
+
+shift
+exec "$sub_script" "$@"

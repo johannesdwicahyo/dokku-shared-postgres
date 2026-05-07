@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Plugin identity
+PLUGIN_COMMAND_PREFIX="shared-postgres"
+PLUGIN_SERVICE="shared-postgres"
+
+# Shared Postgres container
+PLUGIN_IMAGE="postgres"
+PLUGIN_IMAGE_VERSION="16-alpine"
+PLUGIN_CONTAINER_NAME="dokku-shared-postgres"
+PLUGIN_NETWORK_NAME="dokku-shared-postgres"
+PLUGIN_DB_PORT="5432"
+
+# Filesystem layout (overrideable for tests)
+PLUGIN_DATA_ROOT="${PLUGIN_DATA_ROOT:-/var/lib/dokku/services/shared-postgres}"
+PLUGIN_ADMIN_PASSWORD_FILE="${PLUGIN_DATA_ROOT}/.admin_password"
+
+# Defaults (per-tenant)
+PLUGIN_DEFAULT_CONNECTION_LIMIT="${PLUGIN_DEFAULT_CONNECTION_LIMIT:-20}"
+PLUGIN_DEFAULT_QUOTA_MB="${PLUGIN_DEFAULT_QUOTA_MB:-150}"
+
+# Tenant name validation
+PLUGIN_NAME_REGEX='^[a-z][a-z0-9_-]{0,30}$'
+
+export PLUGIN_COMMAND_PREFIX PLUGIN_SERVICE \
+       PLUGIN_IMAGE PLUGIN_IMAGE_VERSION \
+       PLUGIN_CONTAINER_NAME PLUGIN_NETWORK_NAME PLUGIN_DB_PORT \
+       PLUGIN_DATA_ROOT PLUGIN_ADMIN_PASSWORD_FILE \
+       PLUGIN_DEFAULT_CONNECTION_LIMIT PLUGIN_DEFAULT_QUOTA_MB \
+       PLUGIN_NAME_REGEX

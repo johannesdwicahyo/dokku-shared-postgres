@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+name="${1:-}"
+flag="${2:-}"
+
+if [[ -z "$name" ]]; then
+  echo "tenant name required: dokku $PLUGIN_COMMAND_PREFIX:destroy <name> -f" >&2
+  exit 2
+fi
+
+if [[ "$flag" != "-f" && "$flag" != "--force" ]]; then
+  echo "refusing to destroy '$name' without -f flag" >&2
+  exit 2
+fi
+
+service_destroy "$name"
+echo "destroyed: $name"
