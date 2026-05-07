@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml)
 
-> **Status: v0.1.0-dev.** Shipping CLI surface: `create`, `destroy`, `link`, `list`. `info`, `connect`, `export`, `import`, `set-quota`, and the periodic quota-enforcement trigger are landing in v0.1.
+> **Status: v0.1.0-dev.** Shipping CLI surface: `create`, `destroy`, `link`, `list`, `info`, `connect`. `export`, `import`, `set-quota`, and the periodic quota-enforcement trigger are landing in v0.1.
 
 A [Dokku](https://dokku.com) plugin that provides **shared, multi-tenant Postgres** on a single host. One Postgres container per host; each tenant gets a Postgres role + database with limited privileges, plus quota enforcement.
 
@@ -26,6 +26,12 @@ dokku shared-postgres:link myapp_db myapp
 
 # List all tenants on this host:
 dokku shared-postgres:list
+
+# Inspect a tenant (size, active connections, linked apps):
+dokku shared-postgres:info myapp_db
+
+# Open an interactive psql session as the tenant role:
+dokku shared-postgres:connect myapp_db
 
 # Drop a tenant (use -f because there is no recovery):
 dokku shared-postgres:destroy myapp_db -f

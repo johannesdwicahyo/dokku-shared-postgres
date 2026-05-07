@@ -43,8 +43,10 @@ service_list() {
 
 # Run a SQL string against the shared container as the admin (postgres) user.
 # Reads the admin password from $PLUGIN_ADMIN_PASSWORD_FILE.
+# Extra args after $1 are forwarded to psql (e.g. -t -A for unaligned tuples-only).
 run_psql_admin() {
   local sql="$1"
+  shift || true
   local pw
   pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
   PGPASSWORD="$pw" psql \
@@ -53,7 +55,61 @@ run_psql_admin() {
     -U postgres \
     -d postgres \
     -v ON_ERROR_STOP=1 \
+    "$@" \
     -c "$sql"
+}
+
+service_size() {
+  local name="$1"
+  local raw
+  raw="$(run_psql_admin "SELECT pg_database_size('$name');" -t -A 2>/dev/null || true)"
+  # Strip leading whitespace
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  # Strip trailing whitespace
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  printf '%s\n' "$raw"
+}
+
+service_active_connections() {
+  local name="$1"
+  local raw
+  raw="$(run_psql_admin "SELECT count(*) FROM pg_stat_activity WHERE datname='$name';" -t -A 2>/dev/null || true)"
+  # Strip leading whitespace
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  # Strip trailing whitespace
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  printf '%s\n' "$raw"
+}
+
+service_info() {
+  local name="$1"
+  if ! service_exists "$name"; then
+    echo "service does not exist: $name" >&2
+    return 3
+  fi
+
+  local role db size conns links_csv
+  role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+  db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+  size="$(service_size "$name")"
+  conns="$(service_active_connections "$name")"
+
+  if [[ -s "$PLUGIN_DATA_ROOT/$name/LINKS" ]]; then
+    links_csv="$(tr '\n' ',' <"$PLUGIN_DATA_ROOT/$name/LINKS")"
+    links_csv="${links_csv%,}"
+  else
+    links_csv=""
+  fi
+
+  printf 'name=%s\n'                "$name"
+  printf 'role=%s\n'                "$role"
+  printf 'database=%s\n'            "$db"
+  printf 'host=%s\n'                "$PLUGIN_CONTAINER_NAME"
+  printf 'port=%s\n'                "$PLUGIN_DB_PORT"
+  printf 'size_bytes=%s\n'          "$size"
+  printf 'connection_limit=%s\n'    "$PLUGIN_DEFAULT_CONNECTION_LIMIT"
+  printf 'active_connections=%s\n'  "$conns"
+  printf 'linked_apps=%s\n'         "$links_csv"
 }
 
 service_create() {
