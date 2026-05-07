@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+mkdir -p "$PLUGIN_DATA_ROOT"
+chmod 0750 "$PLUGIN_DATA_ROOT"
+
+docker image pull "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}"
+
+ensure_shared_container
+
+echo "shared-postgres: install complete"

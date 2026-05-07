@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# Shared helpers for shared-postgres. Sourced — never executed directly.
+set -euo pipefail
+
+generate_password() {
+  # 16 random bytes → 32 hex chars. Available everywhere; no openssl dependency.
+  od -An -tx1 -N16 /dev/urandom | tr -d ' \n'
+}
+
+service_exists() {
+  local name="$1"
+  [[ -d "$PLUGIN_DATA_ROOT/$name" ]]
+}
+
+validate_name() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || return 1
+  [[ "$name" =~ $PLUGIN_NAME_REGEX ]] || return 1
+}
+
+service_dsn() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 1; }
+  local role password db
+  role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+  password="$(<"$PLUGIN_DATA_ROOT/$name/PASSWORD")"
+  db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+  printf 'postgres://%s:%s@%s:%s/%s\n' \
+    "$role" "$password" "$PLUGIN_CONTAINER_NAME" "$PLUGIN_DB_PORT" "$db"
+}
+
+service_list() {
+  [[ -d "$PLUGIN_DATA_ROOT" ]] || return 0
+  local d
+  for d in "$PLUGIN_DATA_ROOT"/*/; do
+    [[ -d "$d" ]] || continue
+    local name="${d%/}"
+    name="${name##*/}"
+    [[ "$name" == .* ]] && continue
+    printf '%s\n' "$name"
+  done | sort
+}
+
+# Run a SQL string against the shared container as the admin (postgres) user.
+# Reads the admin password from $PLUGIN_ADMIN_PASSWORD_FILE.
+run_psql_admin() {
+  local sql="$1"
+  local pw
+  pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
+  PGPASSWORD="$pw" psql \
+    -h "$PLUGIN_CONTAINER_NAME" \
+    -p "$PLUGIN_DB_PORT" \
+    -U postgres \
+    -d postgres \
+    -v ON_ERROR_STOP=1 \
+    -c "$sql"
+}
+
+service_create() {
+  local name="$1"
+  validate_name "$name" || { echo "invalid tenant name: $name" >&2; return 2; }
+  if service_exists "$name"; then
+    echo "service already exists: $name" >&2
+    return 3
+  fi
+  ensure_shared_container
+
+  local role="${name}_role"
+  local pw
+  pw="$(generate_password)"
+
+  # Write metadata BEFORE issuing SQL — destroy can clean up if SQL fails.
+  mkdir -p "$PLUGIN_DATA_ROOT/$name"
+  printf '%s' "$pw"   >"$PLUGIN_DATA_ROOT/$name/PASSWORD"
+  printf '%s' "$role" >"$PLUGIN_DATA_ROOT/$name/ROLE"
+  printf '%s' "$name" >"$PLUGIN_DATA_ROOT/$name/DATABASE"
+  : >"$PLUGIN_DATA_ROOT/$name/LINKS"
+  chmod 600 "$PLUGIN_DATA_ROOT/$name/PASSWORD"
+
+  run_psql_admin "CREATE ROLE \"$role\" LOGIN PASSWORD '$pw' CONNECTION LIMIT $PLUGIN_DEFAULT_CONNECTION_LIMIT;"
+  run_psql_admin "CREATE DATABASE \"$name\" OWNER \"$role\";"
+  run_psql_admin "REVOKE CONNECT ON DATABASE \"$name\" FROM PUBLIC; GRANT CONNECT ON DATABASE \"$name\" TO \"$role\";"
+}
+
+service_destroy() {
+  local name="$1"
+  validate_name "$name" || { echo "invalid tenant name: $name" >&2; return 2; }
+  if ! service_exists "$name"; then
+    echo "service does not exist: $name" >&2
+    return 3
+  fi
+
+  local role
+  role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+
+  # Drop in dependency order: DB first (it depends on role), then role.
+  # DROP DATABASE cannot run inside a transaction; psql is fine.
+  run_psql_admin "DROP DATABASE IF EXISTS \"$name\";"
+  run_psql_admin "DROP ROLE IF EXISTS \"$role\";"
+
+  rm -rf "${PLUGIN_DATA_ROOT:?}/$name"
+}
+
+service_link() {
+  local name="$1" app="${2:-}"
+  if ! service_exists "$name"; then
+    echo "service does not exist: $name" >&2
+    return 3
+  fi
+  if [[ -z "$app" ]]; then
+    echo "app name required" >&2
+    return 2
+  fi
+
+  local dsn
+  dsn="$(service_dsn "$name")"
+
+  dokku config:set --no-restart "$app" "DATABASE_URL=$dsn"
+
+  # Record the link, idempotently.
+  local links_file="$PLUGIN_DATA_ROOT/$name/LINKS"
+  if ! grep -qx "$app" "$links_file" 2>/dev/null; then
+    printf '%s\n' "$app" >>"$links_file"
+  fi
+}
+
+# Make sure the shared Postgres container is up. Idempotent.
+ensure_shared_container() {
+  # Already running?
+  local existing
+  existing="$(docker ps --filter "name=^${PLUGIN_CONTAINER_NAME}$" --format '{{.Names}}' || true)"
+  if [[ -n "$existing" ]]; then
+    return 0
+  fi
+
+  # Network (idempotent: ignore "already exists").
+  docker network create "$PLUGIN_NETWORK_NAME" >/dev/null 2>&1 || true
+
+  # Admin password (generate on first install).
+  if [[ ! -s "$PLUGIN_ADMIN_PASSWORD_FILE" ]]; then
+    mkdir -p "$(dirname "$PLUGIN_ADMIN_PASSWORD_FILE")"
+    generate_password >"$PLUGIN_ADMIN_PASSWORD_FILE"
+    chmod 600 "$PLUGIN_ADMIN_PASSWORD_FILE"
+  fi
+
+  local admin_pw
+  admin_pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
+
+  docker run --detach \
+    --name "$PLUGIN_CONTAINER_NAME" \
+    --network "$PLUGIN_NETWORK_NAME" \
+    --restart always \
+    -v "${PLUGIN_DATA_ROOT}/_pgdata:/var/lib/postgresql/data" \
+    -e "POSTGRES_PASSWORD=${admin_pw}" \
+    "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}" >/dev/null
+}

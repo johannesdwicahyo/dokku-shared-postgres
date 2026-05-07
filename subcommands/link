@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
+
+PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
+# shellcheck source=config
+source "$PLUGIN_ROOT/config"
+# shellcheck source=functions
+source "$PLUGIN_ROOT/functions"
+
+name="${1:-}"
+app="${2:-}"
+
+if [[ -z "$name" || -z "$app" ]]; then
+  echo "usage: dokku $PLUGIN_COMMAND_PREFIX:link <name> <app>" >&2
+  exit 2
+fi
+
+service_link "$name" "$app"
+echo "linked: $name -> $app"

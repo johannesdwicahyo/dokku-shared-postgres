@@ -1,0 +1,12 @@
+# bats artefacts
+tests/.bats-tmp/
+*.log
+
+# editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# local-only test scratch
+/tmp-*
