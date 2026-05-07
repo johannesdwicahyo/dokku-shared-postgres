@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Stub: logs args to $STUB_LOG, optionally returns a canned response.
+set -euo pipefail
+printf 'psql %s\n' "$*" >>"${STUB_LOG:-/dev/null}"
+
+queue="${STUB_RESPONSES_DIR:-}/psql.queue"
+if [[ -f "$queue" ]]; then
+  body="$(awk 'BEGIN{p=1} /^---END---$/{exit} {if(p)print}' "$queue")"
+  # consume that response
+  tail -n +"$(($(grep -n '^---END---$' "$queue" | head -n1 | cut -d: -f1) + 1))" \
+    "$queue" >"$queue.next" 2>/dev/null || : >"$queue.next"
+  mv "$queue.next" "$queue"
+  printf '%s\n' "$body"
+fi
+exit 0

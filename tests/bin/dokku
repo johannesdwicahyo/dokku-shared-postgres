@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'dokku %s\n' "$*" >>"${STUB_LOG:-/dev/null}"
+exit 0
