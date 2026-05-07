@@ -43,8 +43,10 @@ service_list() {
 
 # Run a SQL string against the shared container as the admin (postgres) user.
 # Reads the admin password from $PLUGIN_ADMIN_PASSWORD_FILE.
+# Extra args after $1 are forwarded to psql (e.g. -t -A for unaligned tuples-only).
 run_psql_admin() {
   local sql="$1"
+  shift || true
   local pw
   pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
   PGPASSWORD="$pw" psql \
@@ -53,7 +55,19 @@ run_psql_admin() {
     -U postgres \
     -d postgres \
     -v ON_ERROR_STOP=1 \
+    "$@" \
     -c "$sql"
+}
+
+service_size() {
+  local name="$1"
+  local raw
+  raw="$(run_psql_admin "SELECT pg_database_size('$name');" -t -A 2>/dev/null || true)"
+  # Strip leading whitespace
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  # Strip trailing whitespace
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  printf '%s\n' "$raw"
 }
 
 service_create() {
