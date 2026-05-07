@@ -56,6 +56,51 @@ run_psql_admin() {
     -c "$sql"
 }
 
+service_create() {
+  local name="$1"
+  validate_name "$name" || { echo "invalid tenant name: $name" >&2; return 2; }
+  if service_exists "$name"; then
+    echo "service already exists: $name" >&2
+    return 3
+  fi
+  ensure_shared_container
+
+  local role="${name}_role"
+  local pw
+  pw="$(generate_password)"
+
+  # Write metadata BEFORE issuing SQL — destroy can clean up if SQL fails.
+  mkdir -p "$PLUGIN_DATA_ROOT/$name"
+  printf '%s' "$pw"   >"$PLUGIN_DATA_ROOT/$name/PASSWORD"
+  printf '%s' "$role" >"$PLUGIN_DATA_ROOT/$name/ROLE"
+  printf '%s' "$name" >"$PLUGIN_DATA_ROOT/$name/DATABASE"
+  : >"$PLUGIN_DATA_ROOT/$name/LINKS"
+  chmod 600 "$PLUGIN_DATA_ROOT/$name/PASSWORD"
+
+  run_psql_admin "CREATE ROLE \"$role\" LOGIN PASSWORD '$pw' CONNECTION LIMIT $PLUGIN_DEFAULT_CONNECTION_LIMIT;"
+  run_psql_admin "CREATE DATABASE \"$name\" OWNER \"$role\";"
+  run_psql_admin "REVOKE CONNECT ON DATABASE \"$name\" FROM PUBLIC; GRANT CONNECT ON DATABASE \"$name\" TO \"$role\";"
+}
+
+service_destroy() {
+  local name="$1"
+  validate_name "$name" || { echo "invalid tenant name: $name" >&2; return 2; }
+  if ! service_exists "$name"; then
+    echo "service does not exist: $name" >&2
+    return 3
+  fi
+
+  local role
+  role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+
+  # Drop in dependency order: DB first (it depends on role), then role.
+  # DROP DATABASE cannot run inside a transaction; psql is fine.
+  run_psql_admin "DROP DATABASE IF EXISTS \"$name\";"
+  run_psql_admin "DROP ROLE IF EXISTS \"$role\";"
+
+  rm -rf "${PLUGIN_DATA_ROOT:?}/$name"
+}
+
 # Make sure the shared Postgres container is up. Idempotent.
 ensure_shared_container() {
   # Already running?
