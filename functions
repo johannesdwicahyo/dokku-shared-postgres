@@ -11,3 +11,32 @@ service_exists() {
   local name="$1"
   [[ -d "$PLUGIN_DATA_ROOT/$name" ]]
 }
+
+validate_name() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || return 1
+  [[ "$name" =~ $PLUGIN_NAME_REGEX ]] || return 1
+}
+
+service_dsn() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 1; }
+  local role password db
+  role="$(<"$PLUGIN_DATA_ROOT/$name/ROLE")"
+  password="$(<"$PLUGIN_DATA_ROOT/$name/PASSWORD")"
+  db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+  printf 'postgres://%s:%s@%s:%s/%s\n' \
+    "$role" "$password" "$PLUGIN_CONTAINER_NAME" "$PLUGIN_DB_PORT" "$db"
+}
+
+service_list() {
+  [[ -d "$PLUGIN_DATA_ROOT" ]] || return 0
+  local d
+  for d in "$PLUGIN_DATA_ROOT"/*/; do
+    [[ -d "$d" ]] || continue
+    local name="${d%/}"
+    name="${name##*/}"
+    [[ "$name" == .* ]] && continue
+    printf '%s\n' "$name"
+  done | sort
+}
