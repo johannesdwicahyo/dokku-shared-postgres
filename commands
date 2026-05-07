@@ -19,6 +19,8 @@ Commands:
   $PLUGIN_COMMAND_PREFIX:destroy <name> -f       Drop a tenant database and role.
   $PLUGIN_COMMAND_PREFIX:link <name> <app>       Set DATABASE_URL on <app>.
   $PLUGIN_COMMAND_PREFIX:list                    List all tenants on this host.
+  $PLUGIN_COMMAND_PREFIX:info <name>             Print tenant details (role, db, size, conns, links).
+  $PLUGIN_COMMAND_PREFIX:connect <name>          Open psql as the tenant role (interactive).
 EOF
     exit 0
     ;;
