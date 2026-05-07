@@ -80,3 +80,28 @@ setup() {
   run service_list
   [[ "$output" != *".admin_password"* ]]
 }
+
+@test "run_psql_admin invokes psql with admin password env and -d postgres" {
+  run run_psql_admin "SELECT 1"
+  [[ "$status" -eq 0 ]]
+  assert_stub_called_with psql ".*-d postgres.*"
+  assert_stub_called_with psql ".*-c SELECT 1.*"
+}
+
+@test "ensure_shared_container is a no-op when container is running" {
+  stub_response docker 'dokku-shared-postgres'
+  run ensure_shared_container
+  [[ "$status" -eq 0 ]]
+  run grep -c '^docker run ' "$STUB_LOG"
+  [[ "$output" == "0" ]]
+}
+
+@test "ensure_shared_container starts container when missing" {
+  stub_response docker ''
+  stub_response docker ''
+  stub_response docker ''
+  run ensure_shared_container
+  [[ "$status" -eq 0 ]]
+  run grep -c '^docker run ' "$STUB_LOG"
+  [[ "$output" -ge "1" ]]
+}

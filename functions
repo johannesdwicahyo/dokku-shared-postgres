@@ -40,3 +40,49 @@ service_list() {
     printf '%s\n' "$name"
   done | sort
 }
+
+# Run a SQL string against the shared container as the admin (postgres) user.
+# Reads the admin password from $PLUGIN_ADMIN_PASSWORD_FILE.
+run_psql_admin() {
+  local sql="$1"
+  local pw
+  pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
+  PGPASSWORD="$pw" psql \
+    -h "$PLUGIN_CONTAINER_NAME" \
+    -p "$PLUGIN_DB_PORT" \
+    -U postgres \
+    -d postgres \
+    -v ON_ERROR_STOP=1 \
+    -c "$sql"
+}
+
+# Make sure the shared Postgres container is up. Idempotent.
+ensure_shared_container() {
+  # Already running?
+  local existing
+  existing="$(docker ps --filter "name=^${PLUGIN_CONTAINER_NAME}$" --format '{{.Names}}' || true)"
+  if [[ -n "$existing" ]]; then
+    return 0
+  fi
+
+  # Network (idempotent: ignore "already exists").
+  docker network create "$PLUGIN_NETWORK_NAME" >/dev/null 2>&1 || true
+
+  # Admin password (generate on first install).
+  if [[ ! -s "$PLUGIN_ADMIN_PASSWORD_FILE" ]]; then
+    mkdir -p "$(dirname "$PLUGIN_ADMIN_PASSWORD_FILE")"
+    generate_password >"$PLUGIN_ADMIN_PASSWORD_FILE"
+    chmod 600 "$PLUGIN_ADMIN_PASSWORD_FILE"
+  fi
+
+  local admin_pw
+  admin_pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
+
+  docker run --detach \
+    --name "$PLUGIN_CONTAINER_NAME" \
+    --network "$PLUGIN_NETWORK_NAME" \
+    --restart always \
+    -v "${PLUGIN_DATA_ROOT}/_pgdata:/var/lib/postgresql/data" \
+    -e "POSTGRES_PASSWORD=${admin_pw}" \
+    "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}" >/dev/null
+}
