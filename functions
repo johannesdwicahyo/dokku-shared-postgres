@@ -101,6 +101,29 @@ service_destroy() {
   rm -rf "${PLUGIN_DATA_ROOT:?}/$name"
 }
 
+service_link() {
+  local name="$1" app="${2:-}"
+  if ! service_exists "$name"; then
+    echo "service does not exist: $name" >&2
+    return 3
+  fi
+  if [[ -z "$app" ]]; then
+    echo "app name required" >&2
+    return 2
+  fi
+
+  local dsn
+  dsn="$(service_dsn "$name")"
+
+  dokku config:set --no-restart "$app" "DATABASE_URL=$dsn"
+
+  # Record the link, idempotently.
+  local links_file="$PLUGIN_DATA_ROOT/$name/LINKS"
+  if ! grep -qx "$app" "$links_file" 2>/dev/null; then
+    printf '%s\n' "$app" >>"$links_file"
+  fi
+}
+
 # Make sure the shared Postgres container is up. Idempotent.
 ensure_shared_container() {
   # Already running?
