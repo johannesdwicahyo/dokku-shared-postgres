@@ -24,6 +24,8 @@ Commands:
   $PLUGIN_COMMAND_PREFIX:set-quota <name> <mb>   Set the size cap for a tenant (MB).
   $PLUGIN_COMMAND_PREFIX:unset-quota <name>      Clear the override; revert to default.
   $PLUGIN_COMMAND_PREFIX:check-quotas            Run the quota sweep manually.
+  $PLUGIN_COMMAND_PREFIX:export <name>           Stream pg_dump to stdout.
+  $PLUGIN_COMMAND_PREFIX:import <name>           Pipe SQL on stdin to psql.
 EOF
     exit 0
     ;;
