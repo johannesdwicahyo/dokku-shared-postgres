@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Shared helpers for shared-postgres. Sourced — never executed directly.
+set -euo pipefail
+
+generate_password() {
+  # 16 random bytes → 32 hex chars. Available everywhere; no openssl dependency.
+  od -An -tx1 -N16 /dev/urandom | tr -d ' \n'
+}
+
+service_exists() {
+  local name="$1"
+  [[ -d "$PLUGIN_DATA_ROOT/$name" ]]
+}
