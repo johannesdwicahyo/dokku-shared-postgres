@@ -210,3 +210,29 @@ ensure_shared_container() {
     -e "POSTGRES_PASSWORD=${admin_pw}" \
     "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}" >/dev/null
 }
+
+service_get_quota_mb() {
+  local name="$1"
+  local f="$PLUGIN_DATA_ROOT/$name/QUOTA_MB"
+  if [[ -s "$f" ]]; then
+    cat "$f"
+  else
+    printf '%s' "$PLUGIN_DEFAULT_QUOTA_MB"
+  fi
+}
+
+service_set_quota_mb() {
+  local name="$1" mb="$2"
+  if ! [[ "$mb" =~ ^[1-9][0-9]*$ ]]; then
+    echo "quota must be a positive integer (megabytes): $mb" >&2
+    return 2
+  fi
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
+  printf '%s' "$mb" >"$PLUGIN_DATA_ROOT/$name/QUOTA_MB"
+}
+
+service_unset_quota_mb() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
+  rm -f "$PLUGIN_DATA_ROOT/$name/QUOTA_MB"
+}
