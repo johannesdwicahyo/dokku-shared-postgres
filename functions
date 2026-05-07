@@ -236,3 +236,33 @@ service_unset_quota_mb() {
   service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
   rm -f "$PLUGIN_DATA_ROOT/$name/QUOTA_MB"
 }
+
+service_check_quota() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
+
+  local quota_mb size_bytes cap_bytes
+  quota_mb="$(service_get_quota_mb "$name")"
+  size_bytes="$(service_size "$name")"
+  cap_bytes=$((quota_mb * 1024 * 1024))
+
+  [[ -z "$size_bytes" ]] && size_bytes=0
+
+  local marker="$PLUGIN_DATA_ROOT/$name/QUOTA_VIOLATED"
+
+  if (( size_bytes > cap_bytes )); then
+    if [[ ! -f "$marker" ]]; then
+      run_psql_admin "ALTER DATABASE \"$name\" SET default_transaction_read_only = on;" >/dev/null
+      : >"$marker"
+      printf 'flipped name=%s size_bytes=%s cap_bytes=%s -> read_only\n' \
+        "$name" "$size_bytes" "$cap_bytes"
+    fi
+  else
+    if [[ -f "$marker" ]]; then
+      run_psql_admin "ALTER DATABASE \"$name\" SET default_transaction_read_only = off;" >/dev/null
+      rm -f "$marker"
+      printf 'released name=%s size_bytes=%s cap_bytes=%s -> writable\n' \
+        "$name" "$size_bytes" "$cap_bytes"
+    fi
+  fi
+}
