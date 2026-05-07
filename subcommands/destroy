@@ -3,9 +3,9 @@ set -euo pipefail
 [[ "${DOKKU_TRACE:-}" == "1" ]] && set -x
 
 PLUGIN_ROOT="$(cd "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")" && pwd)"
-# shellcheck source=../config
+# shellcheck source=config
 source "$PLUGIN_ROOT/config"
-# shellcheck source=../functions
+# shellcheck source=functions
 source "$PLUGIN_ROOT/functions"
 
 name="${1:-}"
