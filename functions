@@ -266,3 +266,19 @@ service_check_quota() {
     fi
   fi
 }
+
+service_export() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
+  local db
+  db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+  docker exec -i "$PLUGIN_CONTAINER_NAME" pg_dump -U postgres "$db"
+}
+
+service_import() {
+  local name="$1"
+  service_exists "$name" || { echo "service does not exist: $name" >&2; return 3; }
+  local db
+  db="$(<"$PLUGIN_DATA_ROOT/$name/DATABASE")"
+  docker exec -i "$PLUGIN_CONTAINER_NAME" psql -U postgres -d "$db"
+}
