@@ -23,15 +23,15 @@ setup() {
 @test "service_create issues CREATE ROLE then CREATE DATABASE then GRANT" {
   service_create "demo"
   # All psql calls — order matters.
-  psql_calls=()
-  while IFS= read -r line; do psql_calls+=("$line"); done < <(grep '^psql ' "$STUB_LOG")
-  [[ "${psql_calls[0]}" == *"CREATE ROLE"* ]]
-  [[ "${psql_calls[0]}" == *"demo_role"* ]]
-  [[ "${psql_calls[0]}" == *"CONNECTION LIMIT 20"* ]]
-  [[ "${psql_calls[1]}" == *"CREATE DATABASE"* ]]
-  [[ "${psql_calls[1]}" == *"OWNER demo_role"* ]]
-  [[ "${psql_calls[2]}" == *"REVOKE"* ]]
-  [[ "${psql_calls[2]}" == *"PUBLIC"* ]]
+  sql_calls=()
+  while IFS= read -r line; do sql_calls+=("$line"); done < <(grep '^docker exec.*psql' "$STUB_LOG")
+  [[ "${sql_calls[0]}" == *"CREATE ROLE"* ]]
+  [[ "${sql_calls[0]}" == *"demo_role"* ]]
+  [[ "${sql_calls[0]}" == *"CONNECTION LIMIT 20"* ]]
+  [[ "${sql_calls[1]}" == *"CREATE DATABASE"* ]]
+  [[ "${sql_calls[1]}" == *"OWNER demo_role"* ]]
+  [[ "${sql_calls[2]}" == *"REVOKE"* ]]
+  [[ "${sql_calls[2]}" == *"PUBLIC"* ]]
 }
 
 @test "service_create refuses an existing tenant" {
@@ -51,12 +51,12 @@ setup() {
   : >"$STUB_LOG"   # reset log so we only inspect destroy calls
   service_destroy "demo"
   [[ ! -d "$PLUGIN_DATA_ROOT/demo" ]]
-  psql_calls=()
-  while IFS= read -r line; do psql_calls+=("$line"); done < <(grep '^psql ' "$STUB_LOG")
-  [[ "${psql_calls[0]}" == *"DROP DATABASE"* ]]
-  [[ "${psql_calls[0]}" == *"demo"* ]]
-  [[ "${psql_calls[1]}" == *"DROP ROLE"* ]]
-  [[ "${psql_calls[1]}" == *"demo_role"* ]]
+  sql_calls=()
+  while IFS= read -r line; do sql_calls+=("$line"); done < <(grep '^docker exec.*psql' "$STUB_LOG")
+  [[ "${sql_calls[0]}" == *"DROP DATABASE"* ]]
+  [[ "${sql_calls[0]}" == *"demo"* ]]
+  [[ "${sql_calls[1]}" == *"DROP ROLE"* ]]
+  [[ "${sql_calls[1]}" == *"demo_role"* ]]
 }
 
 @test "service_destroy is idempotent when tenant is missing" {

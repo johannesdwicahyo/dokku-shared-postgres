@@ -10,8 +10,8 @@ setup() {
   printf 'pw'        >"$PLUGIN_DATA_ROOT/demo/PASSWORD"
   printf 'demo'      >"$PLUGIN_DATA_ROOT/demo/DATABASE"
   : >"$PLUGIN_DATA_ROOT/demo/LINKS"
-  stub_response psql '8192'
-  stub_response psql '0'
+  stub_response docker '8192'
+  stub_response docker '0'
 }
 
 @test "subcommands/info prints labelled lines" {
