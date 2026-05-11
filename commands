@@ -11,23 +11,7 @@ cmd="${1:-}"
 case "$cmd" in
   "$PLUGIN_COMMAND_PREFIX"|"$PLUGIN_COMMAND_PREFIX":*) : ;;
   help|"$PLUGIN_COMMAND_PREFIX":help)
-    cat <<EOF
-Usage: dokku $PLUGIN_COMMAND_PREFIX:<command> [args]
-
-Commands:
-  $PLUGIN_COMMAND_PREFIX:create <name>           Create a new tenant database.
-  $PLUGIN_COMMAND_PREFIX:destroy <name> -f       Drop a tenant database and role.
-  $PLUGIN_COMMAND_PREFIX:link <name> <app>       Set DATABASE_URL on <app>.
-  $PLUGIN_COMMAND_PREFIX:list                    List all tenants on this host.
-  $PLUGIN_COMMAND_PREFIX:info <name>             Print tenant details (role, db, size, conns, links).
-  $PLUGIN_COMMAND_PREFIX:connect <name>          Open psql as the tenant role (interactive).
-  $PLUGIN_COMMAND_PREFIX:set-quota <name> <mb>   Set the size cap for a tenant (MB).
-  $PLUGIN_COMMAND_PREFIX:unset-quota <name>      Clear the override; revert to default.
-  $PLUGIN_COMMAND_PREFIX:check-quotas            Run the quota sweep manually.
-  $PLUGIN_COMMAND_PREFIX:export <name>           Stream pg_dump to stdout.
-  $PLUGIN_COMMAND_PREFIX:import <name>           Pipe SQL on stdin to psql.
-EOF
-    exit 0
+    exec "$PLUGIN_ROOT/subcommands/help" "$PLUGIN_COMMAND_PREFIX:help"
     ;;
   *) exit "${DOKKU_NOT_IMPLEMENTED_EXIT:-10}" ;;
 esac
