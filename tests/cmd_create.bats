@@ -8,7 +8,7 @@ setup() {
 }
 
 @test "subcommands/create creates a tenant and prints the DSN" {
-  run "$REPO_ROOT/subcommands/create" "demo"
+  run "$REPO_ROOT/subcommands/create" "shared-postgres:create" "demo"
   [[ "$status" -eq 0 ]]
   [[ -d "$PLUGIN_DATA_ROOT/demo" ]]
   [[ "$output" == *"postgres://demo_role:"* ]]
@@ -16,12 +16,12 @@ setup() {
 }
 
 @test "subcommands/create exits non-zero on missing arg" {
-  run "$REPO_ROOT/subcommands/create"
+  run "$REPO_ROOT/subcommands/create" "shared-postgres:create"
   [[ "$status" -ne 0 ]]
   [[ "$output" == *"name required"* ]]
 }
 
 @test "subcommands/create exits non-zero on invalid name" {
-  run "$REPO_ROOT/subcommands/create" "BAD"
+  run "$REPO_ROOT/subcommands/create" "shared-postgres:create" "BAD"
   [[ "$status" -ne 0 ]]
 }
