@@ -15,18 +15,18 @@ setup() {
 }
 
 @test "check-quotas runs across all tenants and exits 0 when all under cap" {
-  stub_response psql '0'
-  stub_response psql '0'
-  run "$REPO_ROOT/subcommands/check-quotas"
+  stub_response docker '0'
+  stub_response docker '0'
+  run "$REPO_ROOT/subcommands/check-quotas" "shared-postgres:check-quotas"
   [[ "$status" -eq 0 ]]
 }
 
 @test "check-quotas reports flipped state when a tenant exceeds cap" {
   printf '1' >"$PLUGIN_DATA_ROOT/alpha/QUOTA_MB"
-  stub_response psql '2097152'
-  stub_response psql ''
-  stub_response psql '0'
-  run "$REPO_ROOT/subcommands/check-quotas"
+  stub_response docker '2097152'
+  stub_response docker ''
+  stub_response docker '0'
+  run "$REPO_ROOT/subcommands/check-quotas" "shared-postgres:check-quotas"
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"flipped"* ]]
   [[ "$output" == *"alpha"* ]]
@@ -34,6 +34,6 @@ setup() {
 
 @test "check-quotas does nothing when no tenants" {
   rm -rf "$PLUGIN_DATA_ROOT"/*
-  run "$REPO_ROOT/subcommands/check-quotas"
+  run "$REPO_ROOT/subcommands/check-quotas" "shared-postgres:check-quotas"
   [[ "$status" -eq 0 ]]
 }

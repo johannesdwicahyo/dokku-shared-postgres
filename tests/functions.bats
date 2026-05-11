@@ -84,8 +84,8 @@ setup() {
 @test "run_psql_admin invokes psql with admin password env and -d postgres" {
   run run_psql_admin "SELECT 1"
   [[ "$status" -eq 0 ]]
-  assert_stub_called_with psql ".*-d postgres.*"
-  assert_stub_called_with psql ".*-c SELECT 1.*"
+  assert_stub_called_with docker ".*psql.*-d postgres.*"
+  assert_stub_called_with docker ".*psql.*-c SELECT 1.*"
 }
 
 @test "ensure_shared_container is a no-op when container is running" {

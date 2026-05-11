@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/johannesdwicahyo/dokku-shared-postgres/actions/workflows/ci.yml)
 
-> **Status: v0.1.0-dev.** Full CLI surface: `create`, `destroy`, `link`, `list`, `info`, `connect`, `set-quota`, `unset-quota`, `check-quotas`, `export`, `import`.
+> **Status: v0.2.0.** Full CLI surface: `create`, `destroy`, `link`, `list`, `info`, `connect`, `set-quota`, `unset-quota`, `check-quotas`, `export`, `import`, `help`. Verified end-to-end on Dokku 0.38.
+>
+> v0.1.0-dev was not production-ready — the subcommand dispatch contract, the data-dir permissions, and the `psql` invocation path all failed against real Dokku. See `FIXES_FOR_V0_2_0.md` for the post-mortem.
 
 A [Dokku](https://dokku.com) plugin that provides **shared, multi-tenant Postgres** on a single host. One Postgres container per host; each tenant gets a Postgres role + database with limited privileges, plus quota enforcement.
 

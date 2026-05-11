@@ -42,6 +42,9 @@ service_list() {
 }
 
 # Run a SQL string against the shared container as the admin (postgres) user.
+# Executes psql *inside* the container via `docker exec` — the plugin doesn't
+# require a host-side postgres-client install and doesn't need to resolve the
+# container hostname over the host's DNS.
 # Reads the admin password from $PLUGIN_ADMIN_PASSWORD_FILE.
 # Extra args after $1 are forwarded to psql (e.g. -t -A for unaligned tuples-only).
 run_psql_admin() {
@@ -49,14 +52,15 @@ run_psql_admin() {
   shift || true
   local pw
   pw="$(<"$PLUGIN_ADMIN_PASSWORD_FILE")"
-  PGPASSWORD="$pw" psql \
-    -h "$PLUGIN_CONTAINER_NAME" \
-    -p "$PLUGIN_DB_PORT" \
-    -U postgres \
-    -d postgres \
-    -v ON_ERROR_STOP=1 \
-    "$@" \
-    -c "$sql"
+  docker exec -i \
+    -e "PGPASSWORD=$pw" \
+    "$PLUGIN_CONTAINER_NAME" \
+    psql \
+      -U postgres \
+      -d postgres \
+      -v ON_ERROR_STOP=1 \
+      "$@" \
+      -c "$sql"
 }
 
 service_size() {

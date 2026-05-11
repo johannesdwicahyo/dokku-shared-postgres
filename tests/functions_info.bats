@@ -8,15 +8,15 @@ setup() {
 }
 
 @test "service_size returns the byte count from pg_database_size" {
-  stub_response psql '12345678'
+  stub_response docker '12345678'
   run service_size "demo"
   [[ "$status" -eq 0 ]]
   [[ "$output" == "12345678" ]]
-  assert_stub_called_with psql ".*pg_database_size.*demo.*"
+  assert_stub_called_with docker ".*psql.*pg_database_size.*demo.*"
 }
 
 @test "service_size strips whitespace from psql output" {
-  stub_response psql '  42  '
+  stub_response docker '  42  '
   run service_size "demo"
   [[ "$output" == "42" ]]
 }
@@ -33,8 +33,8 @@ setup() {
   printf 'demo'        >"$PLUGIN_DATA_ROOT/demo/DATABASE"
   printf 'app1\napp2\n' >"$PLUGIN_DATA_ROOT/demo/LINKS"
 
-  stub_response psql '4096'
-  stub_response psql '3'
+  stub_response docker '4096'
+  stub_response docker '3'
 
   run service_info "demo"
   [[ "$status" -eq 0 ]]
@@ -55,8 +55,8 @@ setup() {
   printf 'demo'      >"$PLUGIN_DATA_ROOT/demo/DATABASE"
   : >"$PLUGIN_DATA_ROOT/demo/LINKS"
 
-  stub_response psql '0'
-  stub_response psql '0'
+  stub_response docker '0'
+  stub_response docker '0'
   run service_info "demo"
   [[ "$output" == *"linked_apps="* ]]
   [[ "$output" != *"linked_apps=,"* ]]

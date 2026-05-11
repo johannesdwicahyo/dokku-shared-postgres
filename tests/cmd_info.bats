@@ -10,12 +10,12 @@ setup() {
   printf 'pw'        >"$PLUGIN_DATA_ROOT/demo/PASSWORD"
   printf 'demo'      >"$PLUGIN_DATA_ROOT/demo/DATABASE"
   : >"$PLUGIN_DATA_ROOT/demo/LINKS"
-  stub_response psql '8192'
-  stub_response psql '0'
+  stub_response docker '8192'
+  stub_response docker '0'
 }
 
 @test "subcommands/info prints labelled lines" {
-  run "$REPO_ROOT/subcommands/info" "demo"
+  run "$REPO_ROOT/subcommands/info" "shared-postgres:info" "demo"
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"Name:"* ]]
   [[ "$output" == *"demo"* ]]
@@ -26,11 +26,11 @@ setup() {
 }
 
 @test "subcommands/info errors on missing arg" {
-  run "$REPO_ROOT/subcommands/info"
+  run "$REPO_ROOT/subcommands/info" "shared-postgres:info"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/info errors on missing tenant" {
-  run "$REPO_ROOT/subcommands/info" "ghost"
+  run "$REPO_ROOT/subcommands/info" "shared-postgres:info" "ghost"
   [[ "$status" -ne 0 ]]
 }

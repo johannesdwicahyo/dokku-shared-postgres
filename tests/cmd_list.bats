@@ -15,7 +15,7 @@ setup() {
 
 @test "subcommands/list prints nothing when empty" {
   rm -rf "${PLUGIN_DATA_ROOT:?}/"*
-  run "$REPO_ROOT/subcommands/list"
+  run "$REPO_ROOT/subcommands/list" "shared-postgres:list"
   [[ "$status" -eq 0 ]]
   [[ -z "$output" ]]
 }

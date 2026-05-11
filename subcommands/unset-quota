@@ -8,6 +8,8 @@ source "$PLUGIN_ROOT/config"
 # shellcheck source=functions
 source "$PLUGIN_ROOT/functions"
 
+shift || true  # drop the Dokku-provided "shared-postgres:<cmd>" arg
+
 name="${1:-}"
 if [[ -z "$name" ]]; then
   echo "usage: dokku $PLUGIN_COMMAND_PREFIX:unset-quota <name>" >&2
