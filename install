@@ -15,6 +15,16 @@ docker image pull "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}"
 
 ensure_shared_container
 
+# Make the data dir writable by the dokku user — every runtime invocation
+# of the plugin's subcommands runs as 'dokku' (via SSH or the dokku CLI),
+# not root. Skip the _pgdata subdir: that's owned by the postgres container
+# UID (70) and must stay that way.
+if id -u dokku >/dev/null 2>&1; then
+  find "$PLUGIN_DATA_ROOT" -mindepth 0 -maxdepth 0 -exec chown dokku:dokku {} +
+  find "$PLUGIN_DATA_ROOT" -mindepth 1 -maxdepth 1 ! -name '_pgdata' \
+    -exec chown -R dokku:dokku {} +
+fi
+
 # Install the periodic quota check. Operators can disable by removing this file.
 CRON_FILE="/etc/cron.d/dokku-shared-postgres"
 if [[ -w "$(dirname "$CRON_FILE")" || "$(id -u)" -eq 0 ]]; then
