@@ -11,19 +11,19 @@ setup() {
 }
 
 @test "subcommands/destroy with -f removes the tenant non-interactively" {
-  run "$REPO_ROOT/subcommands/destroy" "demo" "-f"
+  run "$REPO_ROOT/subcommands/destroy" "shared-postgres:destroy" "demo" "-f"
   [[ "$status" -eq 0 ]]
   [[ ! -d "$PLUGIN_DATA_ROOT/demo" ]]
 }
 
 @test "subcommands/destroy refuses without -f" {
-  run "$REPO_ROOT/subcommands/destroy" "demo"
+  run "$REPO_ROOT/subcommands/destroy" "shared-postgres:destroy" "demo"
   [[ "$status" -ne 0 ]]
   [[ "$output" == *"-f"* ]]
   [[ -d "$PLUGIN_DATA_ROOT/demo" ]]
 }
 
 @test "subcommands/destroy errors on missing tenant" {
-  run "$REPO_ROOT/subcommands/destroy" "ghost" "-f"
+  run "$REPO_ROOT/subcommands/destroy" "shared-postgres:destroy" "ghost" "-f"
   [[ "$status" -ne 0 ]]
 }

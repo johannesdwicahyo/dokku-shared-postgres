@@ -8,6 +8,8 @@ source "$PLUGIN_ROOT/config"
 # shellcheck source=functions
 source "$PLUGIN_ROOT/functions"
 
+shift || true  # drop the Dokku-provided "shared-postgres:<cmd>" arg
+
 while IFS= read -r tenant; do
   [[ -z "$tenant" ]] && continue
   service_check_quota "$tenant"

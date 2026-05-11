@@ -14,34 +14,34 @@ setup() {
 
 @test "subcommands/export prints the dump on stdout" {
   stub_response docker '-- canned dump'
-  run "$REPO_ROOT/subcommands/export" "demo"
+  run "$REPO_ROOT/subcommands/export" "shared-postgres:export" "demo"
   [[ "$status" -eq 0 ]]
   [[ "$output" == "-- canned dump" ]]
 }
 
 @test "subcommands/export errors on missing arg" {
-  run "$REPO_ROOT/subcommands/export"
+  run "$REPO_ROOT/subcommands/export" "shared-postgres:export"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/export errors on missing tenant" {
-  run "$REPO_ROOT/subcommands/export" "ghost"
+  run "$REPO_ROOT/subcommands/export" "shared-postgres:export" "ghost"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/import accepts stdin and invokes docker exec" {
-  run "$REPO_ROOT/subcommands/import" "demo" <<<"-- restore"
+  run "$REPO_ROOT/subcommands/import" "shared-postgres:import" "demo" <<<"-- restore"
   [[ "$status" -eq 0 ]]
   run grep -c '^docker exec -i' "$STUB_LOG"
   [[ "$output" -ge "1" ]]
 }
 
 @test "subcommands/import errors on missing arg" {
-  run "$REPO_ROOT/subcommands/import"
+  run "$REPO_ROOT/subcommands/import" "shared-postgres:import"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/import errors on missing tenant" {
-  run "$REPO_ROOT/subcommands/import" "ghost" <<<"-- nope"
+  run "$REPO_ROOT/subcommands/import" "shared-postgres:import" "ghost" <<<"-- nope"
   [[ "$status" -ne 0 ]]
 }

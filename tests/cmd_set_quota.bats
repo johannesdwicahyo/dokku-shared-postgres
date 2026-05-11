@@ -13,24 +13,24 @@ setup() {
 }
 
 @test "subcommands/set-quota sets the cap" {
-  run "$REPO_ROOT/subcommands/set-quota" "demo" "300"
+  run "$REPO_ROOT/subcommands/set-quota" "shared-postgres:set-quota" "demo" "300"
   [[ "$status" -eq 0 ]]
   [[ "$(<"$PLUGIN_DATA_ROOT/demo/QUOTA_MB")" == "300" ]]
 }
 
 @test "subcommands/set-quota errors on missing args" {
-  run "$REPO_ROOT/subcommands/set-quota" "demo"
+  run "$REPO_ROOT/subcommands/set-quota" "shared-postgres:set-quota" "demo"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/set-quota errors on non-numeric" {
-  run "$REPO_ROOT/subcommands/set-quota" "demo" "huge"
+  run "$REPO_ROOT/subcommands/set-quota" "shared-postgres:set-quota" "demo" "huge"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/unset-quota removes the cap" {
   printf '500' >"$PLUGIN_DATA_ROOT/demo/QUOTA_MB"
-  run "$REPO_ROOT/subcommands/unset-quota" "demo"
+  run "$REPO_ROOT/subcommands/unset-quota" "shared-postgres:unset-quota" "demo"
   [[ "$status" -eq 0 ]]
   [[ ! -f "$PLUGIN_DATA_ROOT/demo/QUOTA_MB" ]]
 }

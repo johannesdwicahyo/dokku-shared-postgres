@@ -13,7 +13,7 @@ setup() {
 }
 
 @test "subcommands/link calls dokku config:set" {
-  run "$REPO_ROOT/subcommands/link" "demo" "myapp"
+  run "$REPO_ROOT/subcommands/link" "shared-postgres:link" "demo" "myapp"
   [[ "$status" -eq 0 ]]
   run grep '^dokku ' "$STUB_LOG"
   [[ "$output" == *"config:set"* ]]
@@ -21,6 +21,6 @@ setup() {
 }
 
 @test "subcommands/link errors on missing args" {
-  run "$REPO_ROOT/subcommands/link" "demo"
+  run "$REPO_ROOT/subcommands/link" "shared-postgres:link" "demo"
   [[ "$status" -ne 0 ]]
 }

@@ -41,5 +41,6 @@ if [[ ! -x "$sub_script" ]]; then
   exit "${DOKKU_NOT_IMPLEMENTED_EXIT:-10}"
 fi
 
-shift
+# Pass the full command word through as $1 — matches how Dokku 0.38+
+# invokes plugin subcommands directly (bypassing this dispatcher).
 exec "$sub_script" "$@"

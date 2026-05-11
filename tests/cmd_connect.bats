@@ -13,7 +13,7 @@ setup() {
 }
 
 @test "subcommands/connect --print-only emits docker exec line" {
-  run "$REPO_ROOT/subcommands/connect" "demo" "--print-only"
+  run "$REPO_ROOT/subcommands/connect" "shared-postgres:connect" "demo" "--print-only"
   [[ "$status" -eq 0 ]]
   [[ "$output" == *"docker exec"* ]]
   [[ "$output" == *"-it"* ]]
@@ -24,17 +24,17 @@ setup() {
 }
 
 @test "subcommands/connect --print-only redacts the password" {
-  run "$REPO_ROOT/subcommands/connect" "demo" "--print-only"
+  run "$REPO_ROOT/subcommands/connect" "shared-postgres:connect" "demo" "--print-only"
   [[ "$output" == *"PGPASSWORD=<redacted>"* ]]
   [[ "$output" != *"PGPASSWORD=pw"* ]]
 }
 
 @test "subcommands/connect errors on missing tenant" {
-  run "$REPO_ROOT/subcommands/connect" "ghost" "--print-only"
+  run "$REPO_ROOT/subcommands/connect" "shared-postgres:connect" "ghost" "--print-only"
   [[ "$status" -ne 0 ]]
 }
 
 @test "subcommands/connect errors on missing arg" {
-  run "$REPO_ROOT/subcommands/connect"
+  run "$REPO_ROOT/subcommands/connect" "shared-postgres:connect"
   [[ "$status" -ne 0 ]]
 }
