@@ -37,6 +37,10 @@ service_list() {
     local name="${d%/}"
     name="${name##*/}"
     [[ "$name" == .* ]] && continue
+    # Skip internal directories — `_pgdata` is the postgres container's
+    # data volume mount, not a tenant. Any directory starting with `_`
+    # is reserved for plugin internals.
+    [[ "$name" == _* ]] && continue
     printf '%s\n' "$name"
   done | sort
 }
