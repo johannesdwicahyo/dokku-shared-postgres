@@ -17,7 +17,10 @@ PLUGIN_DATA_ROOT="${PLUGIN_DATA_ROOT:-/var/lib/dokku/services/shared-postgres}"
 PLUGIN_ADMIN_PASSWORD_FILE="${PLUGIN_DATA_ROOT}/.admin_password"
 
 # Defaults (per-tenant)
-PLUGIN_DEFAULT_CONNECTION_LIMIT="${PLUGIN_DEFAULT_CONNECTION_LIMIT:-20}"
+# 40, not 20: Rails 8 apps running Solid Queue/Cache/Cable in Puma open
+# ~15-25 connections on a single DATABASE_URL, which starved the old 20
+# limit and crash-looped them (schdl, 2026-06-19). Host max_connections=100.
+PLUGIN_DEFAULT_CONNECTION_LIMIT="${PLUGIN_DEFAULT_CONNECTION_LIMIT:-40}"
 PLUGIN_DEFAULT_QUOTA_MB="${PLUGIN_DEFAULT_QUOTA_MB:-150}"
 
 # Tenant name validation

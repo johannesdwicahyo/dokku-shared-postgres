@@ -27,7 +27,7 @@ setup() {
   while IFS= read -r line; do sql_calls+=("$line"); done < <(grep '^docker exec.*psql' "$STUB_LOG")
   [[ "${sql_calls[0]}" == *"CREATE ROLE"* ]]
   [[ "${sql_calls[0]}" == *"demo_role"* ]]
-  [[ "${sql_calls[0]}" == *"CONNECTION LIMIT 20"* ]]
+  [[ "${sql_calls[0]}" == *"CONNECTION LIMIT 40"* ]]
   [[ "${sql_calls[1]}" == *"CREATE DATABASE"* ]]
   [[ "${sql_calls[1]}" == *"OWNER demo_role"* ]]
   [[ "${sql_calls[2]}" == *"REVOKE"* ]]
